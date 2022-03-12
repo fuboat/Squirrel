@@ -17,7 +17,8 @@ RUN make
 
 WORKDIR /home/postgres
 RUN git clone https://github.com/postgres/postgres.git
-
+RUN sed "s/! nm -A -u \$< 2>\/dev\/null | grep -v __cxa_atexit | grep exit//g" -i /home/postgres/postgres/src/interfaces/libpq/Makefile
+RUN sed "s/nm -A -u \$< 2>\/dev\/null | grep -v __cxa_atexit | grep exit/(( 0 != 0 ))/g" -i /home/postgres/postgres/src/interfaces/libpq/Makefile
 WORKDIR /home/postgres/postgres/ 
 RUN mkdir /home/postgres/postgres/bld
 run mkdir /home/postgres/postgres/original_bld
@@ -58,3 +59,10 @@ RUN sed -i 's/\#statement\_timeout = 0/statement\_timeout = 10000/' /usr/local/p
 ENTRYPOINT bash
 #ENTRYPOINT ../afl-fuzz -t 2000 -m 2000 -i ./crashes -o ../output /usr/local/pgsql/bin/postgres --single -D /usr/local/pgsql/data main 
 
+RUN echo "y" | pip uninstall libtmux
+RUN pip install libtmux==0.7.8
+
+USER root
+RUN chown postgres:postgres /usr/local/pgsql
+
+USER postgres

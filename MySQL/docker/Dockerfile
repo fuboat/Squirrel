@@ -1,10 +1,11 @@
+
 FROM ubuntu:18.04
 MAINTAINER "dobigthing"
 
 RUN apt-get -y update && apt-get -y upgrade
 RUN apt-get -y install gdb bison flex git make cmake build-essential gcc-multilib g++-multilib xinetd libreadline-dev zlib1g-dev 
 RUN useradd -ms /bin/bash mysql
-RUN apt-get -y install clang libssl-dev libncurses5-dev
+RUN apt-get -y install clang-9 libssl-dev libncurses5-dev
 RUN apt -y install pkg-config
 
 USER mysql
@@ -15,7 +16,9 @@ WORKDIR /home/mysql/AFL
 RUN sed -i  's/#define MAP_SIZE_POW2       16/#define MAP_SIZE_POW2       18/' config.h
 RUN make
 WORKDIR /home/mysql/AFL/llvm_mode
-ENV LLVM_CONFIG=llvm-config-6.0
+ENV LLVM_CONFIG=llvm-config-9
+ENV CC=clang-9
+ENV CXX=clang++-9
 RUN make 
 
 WORKDIR /home/mysql
@@ -28,6 +31,14 @@ RUN mkdir bld
 WORKDIR /home/mysql/mysql-server/bld
 ENV CC=/home/mysql/AFL/afl-clang-fast
 ENV CXX=/home/mysql/AFL/afl-clang-fast++
+
+USER root
+RUN ln -s /usr/bin/clang-9 /usr/bin/clang
+RUN ln -s /usr/bin/clang++-9 /usr/bin/clang++
+RUN apt-get -y install gcc-8 libc++-dev
+RUN apt-get -y install libstdc++-8-dev
+USER mysql
+
 RUN cmake .. -DDOWNLOAD_BOOST=1 -DWITH_BOOST=../boost -DWITH_ASAN=1 -DWITH_ASAN_SCOPE=1 -DWITH_DEBUG=1 -DCPACK_MONOLITHIC_INSTALL=1 && make -j20
 USER root
 RUN make install
@@ -42,6 +53,9 @@ RUN mkdir /home/mysql/mysql-server/bld_orignal/
 WORKDIR /home/mysql/mysql-server/bld_orignal/
 ENV CC=
 ENV CXX=
+USER root
+RUN apt-get -y install g++-8
+USER mysql
 RUN cmake .. -DDOWNLOAD_BOOST=1 -DWITH_BOOST=../boost -DCPACK_MONOLITHIC_INSTALL=1 && make -j20
 
 USER root 
@@ -68,4 +82,6 @@ ENTRYPOINT bash
 #ENTRYPOINT python run.py
 
 #ENTRYPOINT ../afl-fuzz -t 2000 -m 2000 -i ./crashes -o ../output /usr/local/pgsql/bin/postgres --single -D /usr/local/pgsql/data main 
+RUN echo "y" | pip uninstall libtmux
+RUN pip install libtmux==0.7.8
 

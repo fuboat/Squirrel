@@ -26,17 +26,48 @@ RUN apt-key adv --recv-keys --keyserver hkp://keyserver.ubuntu.com:80 0xF1656F24
 RUN add-apt-repository --update --yes --enable-source 'deb [arch=amd64] http://nyc2.mirrors.digitalocean.com/mariadb/repo/10.3/ubuntu '$(lsb_release -sc)' main'
 RUN apt-get -y update
 RUN apt-get -y build-dep mariadb-10.3
+RUN apt-get -y install gcc-8
 
 USER mysql
 WORKDIR /home/mysql/bld
-ENV CC=/home/mysql/AFL/afl-clang
-ENV CXX=/home/mysql/AFL/afl-clang++
 #ENV LLVM_CONFIG=llvm-config-6
 #ENTRYPOINT bash
+USER root
+WORKDIR /root/
+RUN apt-get -y install wget
+RUN wget https://ftp.gnu.org/gnu/binutils/binutils-2.38.tar.gz
+RUN tar -xzvf /root/binutils-2.38.tar.gz
+WORKDIR /root/binutils-2.38
+RUN apt-get -y install make
+RUN apt-get -y install gcc
+RUN apt-get -y install texinfo
+RUN ./configure
+RUN make all
+RUN make install
+ENV LD=/usr/local/bin/ld
+RUN ln -sf /usr/bin/clang-9 /usr/bin/clang
+RUN ln -sf /usr/bin/clang++-9 /usr/bin/clang++
+RUN apt-get -y install libstdc++-8-dev
+RUN apt-get -y install gcc-8 g++-8
+USER mysql
+WORKDIR /home/mysql/AFL 
+RUN sed -i  's/#define MAP_SIZE_POW2       16/#define MAP_SIZE_POW2       18/' config.h
+RUN make clean
+ENV LLVM_CONFIG=llvm-config-9
+RUN make
+WORKDIR /home/mysql/AFL/llvm_mode
+RUN make 
+ENV CC=/home/mysql/AFL/afl-clang-fast
+ENV CXX=/home/mysql/AFL/afl-clang-fast++
+USER root
+RUN ln -sf /usr/local/bin/ld /usr/bin/ld
+USER mysql
+ENV LD=/usr/local/bin/ld
+WORKDIR /home/mysql/bld
 RUN cmake ../mariadb -DWITH_ASAN=ON && make -j20
 USER root
 RUN make install
-
+ENV LD=
 
 USER mysql
 WORKDIR /home/mysql
@@ -68,7 +99,7 @@ USER root
 RUN chown -R mysql:mysql /home/mysql/fuzzing/
 ENV LC_ALL="en_US.UTF-8"
 USER mysql
-RUN pip install libtmux
+RUN pip install libtmux==0.7.8
 WORKDIR /home/mysql/fuzzing/fuzz_root
 ENTRYPOINT bash
 #ENTRYPOINT python run.py
