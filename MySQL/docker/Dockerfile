@@ -85,3 +85,5 @@ ENTRYPOINT bash
 RUN echo "y" | pip uninstall libtmux
 RUN pip install libtmux==0.7.8
 
+USER root
+RUN chown mysql /usr/local/mysql

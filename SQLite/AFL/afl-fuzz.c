@@ -5024,7 +5024,7 @@ static void show_stats(void) {
        skipped or bailed out. */
 
     static u8 fuzz_one(char** argv) {
-
+      int skip_count = 0;
       s32 len, fd, temp_len, i, j;
       u8  *in_buf, *out_buf, *orig_in, *ex_tmp, *eff_map = 0;
       u64 havoc_queued,  orig_hit_cnt, new_hit_cnt;
@@ -5160,7 +5160,7 @@ static void show_stats(void) {
       //[modify] add
       stage_name = "niubi_mutate";
 
-      int skip_count = 0;
+
       input = (const char *)out_buf;
       program_root = parser(input);
       if(program_root == NULL){
