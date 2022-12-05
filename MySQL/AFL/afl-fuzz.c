@@ -5135,6 +5135,8 @@ static u8 fuzz_one(char** argv) {
   u32 a_len = 0;
 
   vector<IR*> mutated_tree;
+  
+  int skip_count = 0;
 
 #ifdef IGNORE_FINDS
 
@@ -5232,7 +5234,7 @@ static u8 fuzz_one(char** argv) {
   orig_hit_cnt = queued_paths + unique_crashes;
 
   prev_cksum = queue_cur->exec_cksum;
-  int skip_count = 0;
+  skip_count = 0;
   mutated_tree = g_mutator.mutate_all(ir_set);
   deep_delete(ir_set[ir_set.size()-1]);
   ir_set.clear();
